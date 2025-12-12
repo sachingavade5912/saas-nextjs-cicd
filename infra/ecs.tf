@@ -1,9 +1,10 @@
-resource "aws_ecs_cluster" "saas_aws_ecs_cluster" {
-  name = "saas-ecs-cluster"
+# Creating an ECR Repository
+resource "aws_ecr_repository" "saas_ecr_repository" {
+  name = "saas-nextjs-repository"
 }
 
-data "aws_ecr_repository" "repo" {
-  name = aws_ecr_repository.saas_ecr_repository.name
+resource "aws_ecs_cluster" "saas_aws_ecs_cluster" {
+  name = "saas-ecs-cluster"
 }
 
 # IAM Role for ECS Task Execution
@@ -46,7 +47,7 @@ resource "aws_ecs_task_definition" "saas_app" {
   container_definitions = jsonencode([
     {
       name  = "saas-nextjs-app"
-      image = "${aws_ecr_repository.repo.repository_url}:latest"
+      image = "${aws_ecr_repository.saas_ecr_repository.repository_url}:latest"
       essential : true
       portMappings = [
         {
@@ -67,7 +68,7 @@ resource "aws_ecs_service" "ecs_service" {
   launch_type = "FARGATE"
 
   network_configuration {
-    subnets = [ for subnets in aws_subnet.public : subnet.id ]
+    subnets = [ aws_subnet.public_subnet[*].id ]
     assign_public_ip = true
   }
 
