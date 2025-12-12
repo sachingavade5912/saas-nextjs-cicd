@@ -31,7 +31,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 # IAM Role Policy Attachment
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy_attachment" {
   role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = aws_iam_role.ecs_task_execution_role.arn
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 resource "aws_ecs_task_definition" "saas_app" {
@@ -64,7 +64,6 @@ resource "aws_ecs_service" "ecs_service" {
   cluster = aws_ecs_cluster.saas_aws_ecs_cluster.id
   task_definition = aws_ecs_task_definition.saas_app.arn
   desired_count = 1
-  iam_role = aws_iam_role.ecs_task_execution_role.arn
   launch_type = "FARGATE"
 
   network_configuration {
