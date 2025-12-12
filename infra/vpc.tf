@@ -54,7 +54,7 @@ resource "aws_eip" "nat" {
 
 resource "aws_nat_gateway" "nat_gw" {
   count         = length(var.public_subnets)
-  allocation_id = aws_eip.nat[count.index + 1].id
+  allocation_id = aws_eip.nat[*].id
 
   subnet_id = aws_subnet.public_subnet[count.index].id
 
@@ -96,7 +96,7 @@ resource "aws_route_table" "private_rtb" {
 # Public Route Table Association
 resource "aws_route_table_association" "public_rtb_association" {
   count          = length(var.public_subnets)
-  subnet_id      = aws_subnet.public_subnet[count.index].index
+  subnet_id      = aws_subnet.public_subnet[count.index].id
   route_table_id = aws_route_table.public_rtb.id
 }
 

@@ -3,7 +3,7 @@ resource "aws_lb" "saas_lb" {
   internal = false
   load_balancer_type = "application"
 
-  subnets = [ aws_subnet.public_subnet[*].id ]
+  subnets = aws_subnet.public_subnet[*].id
 }
 
 resource "aws_lb_target_group" "lb_tg" {
