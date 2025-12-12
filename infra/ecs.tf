@@ -3,7 +3,7 @@ resource "aws_ecs_cluster" "saas_aws_ecs_cluster" {
 }
 
 data "aws_ecr_repository" "saas_ecr_repository" {
-  name = aws_ecr_repository.saas-nextjs-repository.name
+  name = aws_ecr_repository.saas_ecr_repository.name
 }
 
 # IAM Role for ECS Task Execution
