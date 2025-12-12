@@ -1,0 +1,65 @@
+name: Deploy NextJS to ECS
+
+on:
+    push:
+        branches:
+            - master
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        env:
+            AWS_REGION: ap-south-1
+            ECR_REPO: saas-nextjs-repository
+            ECS_CLUSTER: saas-ecs-cluster
+            ECS_SERVICE: saas-ecs-service
+            TF_DIR: saas-website-hosting/infra
+            APP_DIR: signup-and-login-page
+
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v4
+
+            - name: Configure AWS
+              uses: aws-actions/configure-aws-credentials@v3
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: us-east-1
+
+            - name: Login to ECR
+              run: |
+                  aws ecr get-login-password --region $AWS_REGION \
+                    | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com
+
+            - name: Build Docker Image
+              run: |
+                  cd $APP_DIR
+                  docker build -t $ECR_REPO .
+
+            - name: Tag Image
+              run: |
+                  docker tag $ECR_REPO:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
+
+            - name: Push Image
+              run: |
+                  docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v2
+
+            - name: Terraform Init
+              working-directory: ${{ env.TF_DIR }}
+              run: terraform init
+
+            - name: Terraform Apply
+              working-directory: ${{ env.TF_DIR }}
+              run: terraform apply -auto-approve
+
+            - name: Force ECS Deployment (refresh containers)
+              run: |
+                  aws ecs update-service \
+                    --cluster $ECS_CLUSTER \
+                    --service $ECS_SERVICE \
+                    --force-new-deployment
