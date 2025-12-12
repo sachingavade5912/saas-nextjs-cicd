@@ -46,7 +46,7 @@ resource "aws_ecs_task_definition" "saas_app" {
   container_definitions = jsonencode([
     {
       name  = "saas-nextjs-app"
-      image = "${data.aws_ecr_repository.saas_ecr_repository.repository_url}:latest"
+      image = "${aws_ecr_repository.repo.repository_url}:latest"
       essential : true
       portMappings = [
         {
