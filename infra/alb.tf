@@ -3,7 +3,7 @@ resource "aws_lb" "saas_lb" {
   internal = false
   load_balancer_type = "application"
 
-  subnets = [ for subnet in aws_subnet.public : subnet.id ]
+  subnets = [ aws_subnet.public_subnet[*].id ]
 }
 
 resource "aws_lb_target_group" "lb_tg" {
@@ -14,7 +14,7 @@ resource "aws_lb_target_group" "lb_tg" {
 }
 
 resource "aws_lb_listener" "lb_listner" {
-  load_balancer_arn = aws_lb.saas.lb.arn
+  load_balancer_arn = aws_lb.saas_lb.arn
   port = "80"
   protocol = "HTTP"
 

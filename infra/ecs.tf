@@ -1,9 +1,9 @@
-resource "aws_ecs_cluster" "saas-aws_ecs_cluster" {
+resource "aws_ecs_cluster" "saas_aws_ecs_cluster" {
   name = "saas-ecs-cluster"
 }
 
-data "aws_ecr_repositories" "saas_ecr_repository" {
-  name = aws_ecr_repository.saas_ecr_repository.name
+data "aws_ecr_repository" "saas_ecr_repository" {
+  name = aws_ecr_repository.saas-nextjs-repository.name
 }
 
 # IAM Role for ECS Task Execution
@@ -30,7 +30,7 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 # IAM Role Policy Attachment
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy_attachment" {
   role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:iam:aws::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+  policy_arn = aws_iam_role.ecs_task_execution_role.arn
 }
 
 resource "aws_ecs_task_definition" "saas_app" {
@@ -46,7 +46,7 @@ resource "aws_ecs_task_definition" "saas_app" {
   container_definitions = jsonencode([
     {
       name  = "saas-nextjs-app"
-      image = "${data.aws_ecr_repository.saas_ecr_repository.repositoty_url}:latest"
+      image = "${data.aws_ecr_repository.saas_ecr_repository.repository_url}:latest"
       essential : true
       portMappings = [
         {
@@ -56,4 +56,24 @@ resource "aws_ecs_task_definition" "saas_app" {
       ]
     }
   ])
+}
+
+resource "aws_ecs_service" "ecs_service" {
+  name = "saas-ecs-service"
+  cluster = aws_ecs_cluster.saas_aws_ecs_cluster.id
+  task_definition = aws_ecs_task_definition.saas_app.arn
+  desired_count = 1
+  iam_role = aws_iam_role.ecs_task_execution_role.arn
+  launch_type = "FARGATE"
+
+  network_configuration {
+    subnets = [ for subnets in aws_subnet.public : subnet.id ]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.lb_tg.arn
+    container_name = "saas-nextjs-app"
+    container_port = 3000
+  }
 }
