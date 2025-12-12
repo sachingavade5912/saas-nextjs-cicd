@@ -1,4 +1,3 @@
-# Creating an ECR Repository
 resource "aws_ecr_repository" "saas_ecr_repository" {
   name = "saas-nextjs-repository"
 }
@@ -11,13 +10,10 @@ resource "aws_ecs_cluster" "saas_aws_ecs_cluster" {
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "ecsTaskExecutionRole"
 
-  # Terraform's "jsonencode" function converts a
-  # Terraform expression result to valid JSON syntax.
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "ecsTaskExecutionRole"
         Action = "sts:AssumeRole"
         Effect = "Allow"
         Principal = {
@@ -28,7 +24,6 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   })
 }
 
-# IAM Role Policy Attachment
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy_attachment" {
   role       = aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
@@ -43,37 +38,46 @@ resource "aws_ecs_task_definition" "saas_app" {
 
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
 
-
   container_definitions = jsonencode([
     {
-      name  = "saas-nextjs-app"
-      image = "${aws_ecr_repository.saas_ecr_repository.repository_url}:latest"
-      essential : true
+      name      = "saas-nextjs-app"
+      image     = "${aws_ecr_repository.saas_ecr_repository.repository_url}:latest"
+      essential = true
+
       portMappings = [
         {
-          container_port = 3000
-          host_port      = 3000
+          containerPort = 3000
+          hostPort      = 3000
         }
       ]
+
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          "awslogs-group"         = "/ecs/saas-nextjs-app"
+          "awslogs-region"        = "us-east-1"
+          "awslogs-stream-prefix" = "ecs"
+        }
+      }
     }
   ])
 }
 
 resource "aws_ecs_service" "ecs_service" {
-  name = "saas-ecs-service"
-  cluster = aws_ecs_cluster.saas_aws_ecs_cluster.id
+  name            = "saas-ecs-service"
+  cluster         = aws_ecs_cluster.saas_aws_ecs_cluster.id
   task_definition = aws_ecs_task_definition.saas_app.arn
-  desired_count = 1
-  launch_type = "FARGATE"
+  desired_count   = 1
+  launch_type     = "FARGATE"
 
   network_configuration {
-    subnets = aws_subnet.public_subnet[*].id
+    subnets         = aws_subnet.public_subnet[*].id
     assign_public_ip = true
   }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.lb_tg.arn
-    container_name = "saas-nextjs-app"
-    container_port = 3000
+    container_name   = "saas-nextjs-app"
+    container_port   = 3000
   }
 }
