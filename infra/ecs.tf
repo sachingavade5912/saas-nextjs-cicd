@@ -2,7 +2,7 @@ resource "aws_ecs_cluster" "saas_aws_ecs_cluster" {
   name = "saas-ecs-cluster"
 }
 
-data "aws_ecr_repository" "saas_ecr_repository" {
+data "aws_ecr_repository" "repo" {
   name = aws_ecr_repository.saas_ecr_repository.name
 }
 
