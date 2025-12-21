@@ -21,8 +21,7 @@ RUN node -v && pnpm -v
 RUN ls -la
 RUN cat package.json
 
-RUN pnpm run build || (echo "==== NEXT BUILD FAILED ====" && exit 1)
-
+RUN pnpm run build > build.log 2>&1 || (cat build.log && echo "==== NEXT BUILD FAILED ====" && exit 1)
 
 # ===============================
 # Runtime stage
