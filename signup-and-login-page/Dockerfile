@@ -1,16 +1,40 @@
+# ===============================
+# Build stage
+# ===============================
 FROM node:18 AS builder
+
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# Install pnpm
+RUN npm install -g pnpm
 
+# Copy only dependency files first (better cache)
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies exactly as locked
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the source
 COPY . .
+
+# Build the application
 RUN pnpm run build
 
+
+# ===============================
+# Runtime stage
+# ===============================
 FROM node:18 AS runner
+
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Install pnpm for runtime scripts
+RUN npm install -g pnpm
+
+# Copy built app and dependencies
 COPY --from=builder /app ./
+
 EXPOSE 3000
+
 CMD ["pnpm", "start"]
