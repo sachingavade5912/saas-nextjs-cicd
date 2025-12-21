@@ -14,11 +14,14 @@ COPY package.json pnpm-lock.yaml ./
 # Install dependencies exactly as locked
 RUN pnpm install --frozen-lockfile
 
-# Copy the rest of the source
+# Copy source
 COPY . .
 
-# Build the application
-RUN pnpm run build
+RUN node -v && pnpm -v
+RUN ls -la
+RUN cat package.json
+
+RUN pnpm run build || (echo "==== NEXT BUILD FAILED ====" && exit 1)
 
 
 # ===============================
