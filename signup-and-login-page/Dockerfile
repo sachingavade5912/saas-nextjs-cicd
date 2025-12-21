@@ -1,24 +1,16 @@
-# Install dependencies
-FROM node:18-alpine AS deps
+FROM node:18 AS builder
 WORKDIR /app
+
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
-# Build the application
-FROM node:18-alpine AS builder
-WORKDIR /app
 COPY . .
-RUN npm install -g pnpm && pnpm install
-RUN npm run build
+RUN pnpm run build
 
-# Production image
-FROM node:18-alpine AS runner
+FROM node:18 AS runner
 WORKDIR /app
-
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 COPY --from=builder /app ./
-
 EXPOSE 3000
-
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
