@@ -5,7 +5,7 @@ WORKDIR /app
 # ---- Dependencies ----
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
-RUN npm ci
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
 
 # ---- Build ----
 FROM base AS build
