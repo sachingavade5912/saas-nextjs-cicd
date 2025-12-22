@@ -1,42 +1,28 @@
-# ===============================
-# Build stage
-# ===============================
-FROM node:18 AS builder
-
+# ---- Base ----
+FROM node:18-alpine AS base
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm
+# ---- Dependencies ----
+FROM base AS deps
+COPY package*.json ./
+RUN npm ci
 
-# Copy only dependency files first (better cache)
-COPY package.json pnpm-lock.yaml ./
-
-# Install dependencies exactly as locked
-RUN pnpm install --frozen-lockfile
-
-# Copy source
+# ---- Build ----
+FROM base AS build
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN npm run build
 
-RUN node -v && pnpm -v
-RUN ls -la
-RUN cat package.json
-
-RUN pnpm run build > build.log 2>&1 || (cat build.log && echo "==== NEXT BUILD FAILED ====" && exit 1)
-
-# ===============================
-# Runtime stage
-# ===============================
-FROM node:18 AS runner
-
+# ---- Runtime ----
+FROM node:18-alpine AS runner
 WORKDIR /app
+
 ENV NODE_ENV=production
 
-# Install pnpm for runtime scripts
-RUN npm install -g pnpm
-
-# Copy built app and dependencies
-COPY --from=builder /app ./
+COPY --from=build /app/public ./public
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
 
 EXPOSE 3000
-
-CMD ["pnpm", "start"]
+CMD ["npm", "start"]
