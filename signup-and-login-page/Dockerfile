@@ -1,11 +1,12 @@
 # ---- Base ----
 FROM node:18-alpine AS base
 WORKDIR /app
+RUN corepack enable
 
 # ---- Dependencies ----
 FROM base AS deps
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # ---- Build ----
 FROM base AS build
@@ -16,6 +17,7 @@ RUN pnpm build
 # ---- Runtime ----
 FROM node:18-alpine AS runner
 WORKDIR /app
+RUN corepack enable
 
 ENV NODE_ENV=production
 
