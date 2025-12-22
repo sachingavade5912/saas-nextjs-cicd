@@ -4,14 +4,14 @@ WORKDIR /app
 
 # ---- Dependencies ----
 FROM base AS deps
-COPY package*.json ./
+COPY package*.json pnpm-lock.yaml ./
 RUN npm ci
 
 # ---- Build ----
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN pnpm build
 
 # ---- Runtime ----
 FROM node:18-alpine AS runner
@@ -25,4 +25,4 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]
