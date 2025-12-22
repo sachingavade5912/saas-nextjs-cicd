@@ -38,19 +38,31 @@ jobs:
             signup-and-login-page
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Download existing task definition
+      - name: Get current task definition
         run: |
           aws ecs describe-task-definition \
             --task-definition ${{ secrets.TASK_DEFINITION_FAMILY }} \
             --query taskDefinition \
             > task-def.json
 
-      - name: Update task definition image
+      - name: Render new task definition
         run: |
-          jq '.containerDefinitions[0].image = "${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"' \
-          task-def.json > new-task-def.json
+          IMAGE="${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}"
 
-      - name: Register new task definition
+          jq '
+            del(
+              .taskDefinitionArn,
+              .revision,
+              .status,
+              .requiresAttributes,
+              .compatibilities,
+              .registeredAt,
+              .registeredBy
+            )
+            | .containerDefinitions[0].image = "'"$IMAGE"'"
+          ' task-def.json > new-task-def.json
+
+      - name: Register task definition
         run: |
           aws ecs register-task-definition \
             --cli-input-json file://new-task-def.json
